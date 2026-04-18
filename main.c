@@ -4,6 +4,7 @@
 #include <time.h>
 
 #define MAX_LINE 1024
+#define FILE_PATH "data/time.csv"
 
 
 struct time_data {
@@ -11,34 +12,6 @@ struct time_data {
   int minutes;
   int hours;
 };
-
-
-
-
-//when passing an array to function, it decays to a pointer -> sizeof checks pointer lenght not array length
-void print_array(int a[], int len){
-  for (int i = 0; i < len; i++) {
-    printf("%d ", a[i]);
-  }
-}
-
-
-void output_time_since() {
-
-}
-
-void sum_time_since(const char *filepath) {
-
-}
-
-void sum_time_today() {
-}
-
-void sum_time_week() {
-
-}
-
-
 
 
 struct time_data double_to_time(double time_as_sec) {
@@ -55,6 +28,70 @@ struct time_data double_to_time(double time_as_sec) {
   return out;
   
 }
+
+//when passing an array to function, it decays to a pointer -> sizeof checks pointer lenght not array length
+void print_array(int a[], int len){
+  for (int i = 0; i < len; i++) {
+    printf("%d ", a[i]);
+  }
+}
+
+
+void output_time_since() {
+
+}
+
+void sum_time_since(const char *filepath) {
+
+  FILE *file = fopen(filepath, "r");
+
+  if (file == NULL) {
+    printf("%s\n", "file not found");
+  } else {
+
+    int total_sec = 0;
+
+    //iterate over lines
+    char line[255];
+    while (fgets(line, 255, file)) {
+
+      //iterate over csvd
+      int counter = 0;
+      char* token = strtok(line, " ");
+      while (token != NULL) {
+        
+        token  = strtok(NULL, " ");
+        counter++;
+        if (counter == 4) {
+
+          //iterate over time
+
+          char *hours = strtok(token, ":");
+          char *minutes = strtok(NULL, ":");
+          char *seconds = strtok(NULL, ":");
+
+          total_sec += atoi(seconds) + atoi(minutes) * 60 + atoi(hours) * 3600;
+
+        }
+      }
+    }
+
+    struct time_data converted = double_to_time(total_sec);
+    printf("> Totale Zeit: \033[32m%d\033[0m Stunden, \033[32m%d\033[0m Minuten und \033[32m%d\033[0m Sekunde(n)\n", converted.hours, converted.minutes, converted.seconds);
+
+
+  }
+}
+
+void sum_time_today() {
+}
+
+void sum_time_week() {
+
+}
+
+
+
 
 
 
@@ -130,12 +167,21 @@ int main() {
 
     fgets(buffer, MAX_LINE, stdin);
 
+    
+    //MENÜ
     if (strcmp(buffer, "m\n") == 0){
-      printf("Menue Optionen:\n q -> programm verlassen \n s -> \n");
+
+      printf("Menue Optionen:\n q -> programm verlassen \n t -> test \n");
       fgets(buffer, MAX_LINE, stdin);
+
+      //MENÜOPTION: QUIT
       if (strcmp(buffer, "q\n") == 0) {
         break;
       }
+      else if (strcmp(buffer, "t\n") == 0) {
+        sum_time_since(FILE_PATH);
+      }
+
     } 
 
     //STARTZEIT
@@ -158,7 +204,7 @@ int main() {
     //ENDZEIT
     else if (strcmp(buffer, "\n") == 0 && enter_flag == 1){
 
-      struct time_data diff = append_time("data/time.csv", &now);
+      struct time_data diff = append_time(FILE_PATH, &now);
 
       now = time(NULL);
       struct tm *start_time = localtime(&now);
