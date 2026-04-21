@@ -3,6 +3,10 @@
 #include <stdlib.h>
 #include <time.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #define MAX_LINE 1024
 #define FILE_PATH "data/time.csv"
 
@@ -37,11 +41,65 @@ void print_array(int a[], int len){
 }
 
 
-void output_time_since() {
+void read_csv(const char *filepath) {
+  FILE *file = fopen(filepath, "r");
+  if (file == NULL) {
+    printf("%s\n", "file not found");
+  } else {
+
+    //DEFINITION
+    int byte_size_cell = 12;
+    int rows = 20;
+    int columns = 5;
+
+    char ***m_array = malloc(sizeof(char *) * rows);
+
+    for (int a = 0; a < rows; a++) {
+      m_array[a] = malloc(sizeof(char *) * columns);
+      for (int b = 0; b < columns; b++){
+        m_array[a][b] = malloc(sizeof(char) * byte_size_cell);
+      }
+    }
+
+    m_array[3][4][0] = 't';
+    m_array[3][4][1] = 'e';
+    m_array[3][4][2] = 's';
+    m_array[3][4][3] = 't';
+    m_array[3][4][4] = '\0';
+
+    printf("%s\n", m_array[3][4]);
+
+
+    //malloc nimmt eine größe und gibt einen pointer zu memory
+    //mit dieser größe zurück
+    char **array = malloc(sizeof(char *) * 5);
+
+    for (int i = 0; i < 5; i++) {
+      array[i] = malloc(sizeof(char) * byte_size_cell);
+    }
+
+    char line[255];
+
+    fgets(line, 255, file);
+
+    int cell_counter = 0;
+    char *token = strtok(line, " ");
+
+    while (token != NULL){
+      strncpy(array[cell_counter], token, byte_size_cell -1);
+      array[cell_counter][byte_size_cell - 1] = '\0';
+      token = strtok(NULL, " ");
+      cell_counter++;
+    }
+
+    printf("%s\n", array[4]);
+
+  }
 
 }
 
-void sum_time_since(const char *filepath) {
+
+void sum_time_since(const char *filepath, const char *date) {
 
   FILE *file = fopen(filepath, "r");
 
@@ -59,6 +117,7 @@ void sum_time_since(const char *filepath) {
       int counter = 0;
       char* token = strtok(line, " ");
       while (token != NULL) {
+        
         
         token  = strtok(NULL, " ");
         counter++;
@@ -150,37 +209,33 @@ struct time_data append_time(const char *filepath, const time_t *previous) {
 
 
 int main() {
-      /* printf("\033[2J\033[H"); */
+
+  #ifdef _WIN32
+  SetConsoleOutputCP(CP_UTF8);
+  #endif
+
 
   int enter_flag = 0;
 
   time_t now;
 
-  printf("\033[31mEnter druecken um zu starten:\033[0m");
+  char buffer[MAX_LINE];
 
-
+  printf("\033[2J\033[H");
+  printf("\033[31mCommands: q- > quit, Enter -> start/stop\033[0m\n\n");
 
   for(;;) {
 
 
-    char buffer[MAX_LINE];
-
     fgets(buffer, MAX_LINE, stdin);
 
     
-    //MENÜ
-    if (strcmp(buffer, "m\n") == 0){
+    //TEST
+    if (strcmp(buffer, "t\n") == 0){
 
-      printf("Menue Optionen:\n q -> programm verlassen \n t -> test \n");
-      fgets(buffer, MAX_LINE, stdin);
-
-      //MENÜOPTION: QUIT
-      if (strcmp(buffer, "q\n") == 0) {
-        break;
-      }
-      else if (strcmp(buffer, "t\n") == 0) {
-        sum_time_since(FILE_PATH);
-      }
+      printf("\033[2J\033[H");
+      printf("\033[31mCommands: q- > quit, Enter -> start/stop\033[0m\n\n");
+      read_csv("data/time.csv");
 
     } 
 
@@ -189,6 +244,8 @@ int main() {
       now = time(NULL);
       struct tm *start_time = localtime(&now);
 
+      printf("\033[2J\033[H");
+      printf("\033[31mCommands: q- > quit, Enter -> start/stop\033[0m\n\n");
       printf("> Startzeit: \033[32m%02d:%02d:%02d\033[0m Uhr, am %02d.%02d.%02d\n", 
         (*start_time).tm_hour,
         (*start_time).tm_min,
@@ -197,6 +254,16 @@ int main() {
         (*start_time).tm_mon,
         (*start_time).tm_year + 1900
       );
+      printf("┌────────────────────────────────────────────────┐\n");
+      printf("│.########.####.##.....##.####.##....##..######..│\n");
+      printf("│....##.....##..###...###..##..###...##.##....##.│\n");
+      printf("│....##.....##..####.####..##..####..##.##.......│\n");
+      printf("│....##.....##..##.###.##..##..##.##.##.##...####│\n");
+      printf("│....##.....##..##.....##..##..##..####.##....##.│\n");
+      printf("│....##.....##..##.....##..##..##...###.##....##.│\n");
+      printf("│....##....####.##.....##.####.##....##..######..│\n");
+      printf("└────────────────────────────────────────────────┘\n");
+      
       enter_flag = 1;
     } 
 
@@ -209,6 +276,8 @@ int main() {
       now = time(NULL);
       struct tm *start_time = localtime(&now);
 
+      printf("\033[2J\033[H");
+      printf("\033[31mCommands: q- > quit, Enter -> start/stop\033[0m\n\n");
       printf("> Endzeit: \033[32m%02d:%02d:%02d\033[0m Uhr, am %02d.%02d.%02d\n\n", 
         (*start_time).tm_hour,
         (*start_time).tm_min,
@@ -219,10 +288,13 @@ int main() {
       );
 
       printf("> Zeitdauer: \033[32m%d\033[0m Stunden, \033[32m%d\033[0m Minuten und \033[32m%d\033[0m Sekunde(n)\n", diff.hours, diff.minutes, diff.seconds);
-      printf("\033[31mEnter druecken fuer die naechste Messung, q druecken zum beenden:\033[0m\n");
 
       enter_flag = 0;
     } 
+
+    else if (strcmp(buffer, "q\n") == 0) {
+      break;
+    }
 
   
 
