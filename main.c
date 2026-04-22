@@ -33,24 +33,63 @@ struct time_data double_to_time(double time_as_sec) {
   
 }
 
-//when passing an array to function, it decays to a pointer -> sizeof checks pointer lenght not array length
-void print_array(int a[], int len){
-  for (int i = 0; i < len; i++) {
-    printf("%d ", a[i]);
-  }
-}
 
 
-void read_csv(const char *filepath) {
+
+void sum_time_by_date(char *filepath, char *date){
   FILE *file = fopen(filepath, "r");
   if (file == NULL) {
     printf("%s\n", "file not found");
   } else {
+    char line_buffer[255];
+    char row[5][12];
+    int total_sec = 0;
 
-    //DEFINITION
+    while(fgets(line_buffer, 255, file)){
+
+      char *token = strtok(line_buffer, ", ");
+      int counter = 0;
+      while (token != NULL) {
+        strncpy(row[counter], token, 12);
+        row[counter][11] = '\0';
+        counter++;
+        token = strtok(NULL, " ");
+
+      }
+
+      if (strcmp(date, row[0]) == 0) {
+        row[4][8] = '\0';
+
+        char *hours = strtok(row[4], ":");
+        char *minutes = strtok(NULL, ":");
+        char *seconds = strtok(NULL, ":");
+
+        total_sec += atoi(seconds) + atoi(minutes) * 60 + atoi(hours) * 3600;
+      }
+
+
+
+  }
+
+  printf("%d\n", total_sec);
+
+}
+}
+
+
+char *** read_csv(const char *filepath) {
+  FILE *file = fopen(filepath, "r");
+  if (file == NULL) {
+    printf("%s\n", "file not found");
+    return NULL;
+  } else {
+
+
+
     int byte_size_cell = 12;
-    int rows = 20;
+    int rows = 200000;
     int columns = 5;
+
 
     char ***m_array = malloc(sizeof(char *) * rows);
 
@@ -61,40 +100,33 @@ void read_csv(const char *filepath) {
       }
     }
 
-    m_array[3][4][0] = 't';
-    m_array[3][4][1] = 'e';
-    m_array[3][4][2] = 's';
-    m_array[3][4][3] = 't';
-    m_array[3][4][4] = '\0';
+    int row_count = 0;
 
-    printf("%s\n", m_array[3][4]);
+    char line_buffer[255];
 
+    while(fgets(line_buffer, 255, file)){
 
-    //malloc nimmt eine größe und gibt einen pointer zu memory
-    //mit dieser größe zurück
-    char **array = malloc(sizeof(char *) * 5);
+      int col_count = 0;
+      char *token = strtok(line_buffer, " ");
 
-    for (int i = 0; i < 5; i++) {
-      array[i] = malloc(sizeof(char) * byte_size_cell);
-    }
+      while(token != NULL){
+        strncpy(m_array[row_count][col_count], token, byte_size_cell -1);
+        m_array[row_count][col_count][byte_size_cell -1] = '\0';
+        token = strtok(NULL, " ");
+        col_count++;
 
-    char line[255];
+      }
 
-    fgets(line, 255, file);
-
-    int cell_counter = 0;
-    char *token = strtok(line, " ");
-
-    while (token != NULL){
-      strncpy(array[cell_counter], token, byte_size_cell -1);
-      array[cell_counter][byte_size_cell - 1] = '\0';
-      token = strtok(NULL, " ");
-      cell_counter++;
-    }
-
-    printf("%s\n", array[4]);
+      row_count++;
 
   }
+
+
+  return m_array;
+
+
+  }
+
 
 }
 
@@ -179,13 +211,13 @@ struct time_data append_time(const char *filepath, const time_t *previous) {
     char buffer[500];
     sprintf(buffer, "%02d.%02d.%d, %02d:%02d:%02d, %02d.%02d.%d, %02d:%02d:%02d, %02d:%02d:%02d\n", 
       (*previous_time).tm_mday,
-      (*previous_time).tm_mon,
+      (*previous_time).tm_mon+1,
       (*previous_time).tm_year + 1900,
       (*previous_time).tm_hour,
       (*previous_time).tm_min,
       (*previous_time).tm_sec,
       (*t).tm_mday,
-      (*t).tm_mon,
+      (*t).tm_mon+1,
       (*t).tm_year + 1900,
       (*t).tm_hour,
       (*t).tm_min,
@@ -230,12 +262,18 @@ int main() {
     fgets(buffer, MAX_LINE, stdin);
 
     
-    //TEST
+    //TODAY
     if (strcmp(buffer, "t\n") == 0){
 
       printf("\033[2J\033[H");
       printf("\033[31mCommands: q- > quit, Enter -> start/stop\033[0m\n\n");
-      read_csv("data/time.csv");
+
+      now = time(NULL);
+      struct tm *time = localtime(&now);
+      char date_as_string[200];
+      snprintf(date_as_string, 200, "%02d.%02d.%04d", time->tm_mday, time->tm_mon+1, time->tm_year+1900);
+      sum_time_by_date(FILE_PATH, date_as_string);
+
 
     } 
 
@@ -251,7 +289,7 @@ int main() {
         (*start_time).tm_min,
         (*start_time).tm_sec,
         (*start_time).tm_mday,
-        (*start_time).tm_mon,
+        (*start_time).tm_mon+1,
         (*start_time).tm_year + 1900
       );
       printf("┌────────────────────────────────────────────────┐\n");
@@ -283,7 +321,7 @@ int main() {
         (*start_time).tm_min,
         (*start_time).tm_sec,
         (*start_time).tm_mday,
-        (*start_time).tm_mon,
+        (*start_time).tm_mon+1,
         (*start_time).tm_year + 1900
       );
 
@@ -302,58 +340,3 @@ int main() {
 
 return 0;
 }
-
-
-
-
-
-
-
-
-/* int main() {
-
-
-  print_time();
-
-  FILE *pF = fopen("data/time.csv", "r");
-  char buffer[255];
-
-  if (pF == NULL) {
-    printf("Unable to open file \n");
-    return 1;
-    
-  } else {
-
-
-
-    while (fgets(buffer, 255, pF) != NULL) {
-
-
-      char result[255];
-      int result_len = 0;
-
-      int comma_positions[20];
-      int len_comma_position = 0;
-
-      int *commas = malloc(20 * sizeof(int));
-
-
-      for (int i = 0; i < strlen(buffer); i++) {
-        if (buffer[i] == ',') {
-          comma_positions[len_comma_position++] = i;
-
-          
-
-        }
-      }
-
-      print_array(comma_positions, len_comma_position);
-      free(commas);
-    }
-  }
-
-  fclose(pF);
-
-
-  return 0;
-} */
